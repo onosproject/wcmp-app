@@ -11,7 +11,7 @@ export GO111MODULE=on
 
 WCMP_APP_VERSION ?= latest
 
-build-tools:=$(shell if [ ! -d "./build/build-tools" ]; then cd build && git clone https://github.com/onosproject/build-tools.git; fi)
+build-tools:=$(shell if [ ! -d "./build/build-tools" ]; then mkdir -p build && cd build && git clone https://github.com/onosproject/build-tools.git; fi)
 include ./build/build-tools/make/onf-common.mk
 
 mod-update: # @HELP Download the dependencies to the vendor folder
@@ -34,11 +34,10 @@ test: mod-lint build linters license
 	go test -race github.com/onosproject/wcmp-app/...
 
 jenkins-test: # @HELP run the unit tests and source code validation producing a junit style report for Jenkins
-jenkins-test: mod-lint build linters license
+jenkins-test: jenkins-tools mod-lint build linters license
 	TEST_PACKAGES=github.com/onosproject/wcmp-app/... ./build/build-tools/build/jenkins/make-unit
 
-
-integration-tests: helmit-config helmit-rbac # @HELP run helmit integration tests locally
+integration-tests:  # @HELP run helmit integration tests locally
 
 wcmp-app-docker: mod-update local-deps # @HELP build wcmp-app base Docker image
 	docker build --platform linux/amd64 . -f build/wcmp-app/Dockerfile \
@@ -46,6 +45,9 @@ wcmp-app-docker: mod-update local-deps # @HELP build wcmp-app base Docker image
 
 images: # @HELP build all Docker images
 images: wcmp-app-docker
+
+docker-push-latest: docker-login
+	docker push onosproject/wcmp-app:latest
 
 kind: # @HELP build Docker images and add them to the currently configured kind cluster
 kind: images kind-only
@@ -60,8 +62,7 @@ all: build images
 publish: # @HELP publish version on github and dockerhub
 	./build/build-tools/publish-version ${VERSION} onosproject/wcmp-app
 
-jenkins-publish: jenkins-tools # @HELP Jenkins calls this to publish artifacts
-	./build/bin/push-images
+jenkins-publish: images docker-push-latest # @HELP Jenkins calls this to publish artifacts
 	./build/build-tools/release-merge-commit
 	./build/build-tools/build/docs/push-docs
 
