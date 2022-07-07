@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2022-present Open Networking Foundation <info@opennetworking.org>
+# SPDX-FileCopyrightText: 2022-present Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -15,3 +20,7 @@ vendor/
 **/_output
 .idea
 *-output.out
+build/build-tools
+coverage.xml
+report.xml
+
