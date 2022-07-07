@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/uri"
-	"google.golang.org/grpc"
 )
 
 // ConnID connection ID
@@ -22,10 +21,8 @@ type Conn interface {
 
 type conn struct {
 	*client
-	clientConn *grpc.ClientConn
-	id         ConnID
-	targetID   topoapi.ID // topology entity ID
-	deviceID   uint64     // device ID
+	id       ConnID
+	targetID topoapi.ID // topology entity ID
 }
 
 // ID returns connection ID

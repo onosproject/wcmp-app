@@ -33,9 +33,8 @@ func (r readClient) ReadEntities(ctx context.Context, request *p4api.ReadRequest
 		if err != nil {
 			return nil, err
 		}
-		for _, e := range rep.Entities {
-			entities = append(entities, e)
-		}
+		entities = append(entities, rep.Entities...)
+
 	}
 	return entities, nil
 }

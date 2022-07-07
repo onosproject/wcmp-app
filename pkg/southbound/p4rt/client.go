@@ -23,7 +23,6 @@ type Client interface {
 }
 
 type client struct {
-	deviceID             uint64
 	p4runtimeClient      p4api.P4RuntimeClient
 	writeClient          *writeClient
 	readClient           *readClient

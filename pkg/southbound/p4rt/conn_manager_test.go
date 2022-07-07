@@ -180,7 +180,7 @@ func createTestTarget(t *testing.T, targetID string, deviceID uint64, insecure b
 		Type: topoapi.Object_ENTITY,
 		Obj: &topoapi.Object_Entity{
 			Entity: &topoapi.Entity{
-				KindID: topoapi.ID(topoapi.PacketSwitchKind),
+				KindID: topoapi.ID(topoapi.SwitchKind),
 			},
 		},
 	}
@@ -210,13 +210,12 @@ func createTestTarget(t *testing.T, targetID string, deviceID uint64, insecure b
 	})
 
 	assert.NoError(t, err)
-	err = target.SetAspect(&topoapi.PacketSwitch{
+	err = target.SetAspect(&topoapi.Switch{
 		ModelID: "Test model XYZ",
 		Role:    "Leaf",
 		ManagementEndpoint: &topoapi.Endpoint{
 			Address: "localhost",
 		},
-		DeviceID: deviceID,
 	})
 	assert.NoError(t, err)
 

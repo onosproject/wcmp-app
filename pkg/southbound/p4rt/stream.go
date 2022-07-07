@@ -23,7 +23,13 @@ func (s *streamChannelClient) SetMasterArbitration(ctx context.Context, deviceID
 	if err != nil {
 		return nil, err
 	}
-	defer streamChannel.CloseSend()
+	defer func(streamChannel p4api.P4Runtime_StreamChannelClient) {
+		err := streamChannel.CloseSend()
+		if err != nil {
+			log.Warnw("Failed closing stream channel", "error", err)
+			return
+		}
+	}(streamChannel)
 	errCh := make(chan error)
 	var result *p4api.StreamMessageResponse_Arbitration
 	go func() {
