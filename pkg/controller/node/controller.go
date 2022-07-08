@@ -97,7 +97,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 
 			// Check if the lease is expired
 			if lease.Expiration.Before(time.Now()) {
-				log.Debugw("Deleting the expired lease for controller", "controller ID", controllerID)
+				log.Infow("Deleting the expired lease for controller", "controller ID", controllerID)
 				err := r.topo.Delete(ctx, object)
 				if !errors.IsNotFound(err) {
 					log.Warnw("Deleting the expired lease for controller failed", "controller ID", controllerID)
@@ -118,6 +118,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 
 			err := object.GetAspect(lease)
 			if err != nil {
+				log.Warnw("Failed to renew the lease for controller", "controller ID", controllerID, "error", err)
 				return controller.Result{}, err
 			}
 
@@ -125,7 +126,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 			// If the remaining time of lease is more than  half the lease duration, no need to renew the lease
 			// schedule the next renewal
 			if remainingTime > defaultExpirationDuration/2 {
-				log.Debugw("No need to renew the lease", "controller ID", controllerID, "remaining lease time", remainingTime)
+				log.Debugw("No need to renew the lease", "controller ID", controllerID, "remaining lease time (ms)", remainingTime.Milliseconds())
 				return controller.Result{
 					RequeueAfter: time.Until(lease.Expiration.Add(defaultExpirationDuration / 2 * -1)),
 				}, nil
@@ -143,8 +144,8 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 				return controller.Result{}, err
 			}
 			err = r.topo.Update(ctx, object)
-			if !errors.IsNotFound(err) {
-				log.Warnw("Failed to renew the lease for controller", "controller ID", controllerID)
+			if err != nil && !errors.IsNotFound(err) {
+				log.Warnw("Failed to renew the lease for controller", "controller ID", controllerID, "error", err)
 				return controller.Result{}, err
 			}
 			return controller.Result{}, nil
