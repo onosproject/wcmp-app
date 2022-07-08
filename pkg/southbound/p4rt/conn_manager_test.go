@@ -382,7 +382,27 @@ func TestClient_SetMasterArbitration(t *testing.T) {
 	assert.Equal(t, uint64(2), arbitrationUpdate.Arbitration.ElectionId.Low)
 	assert.Equal(t, uint64(0), arbitrationUpdate.Arbitration.ElectionId.High)
 	assert.Equal(t, uint64(deviceID1), arbitrationUpdate.Arbitration.DeviceId)
+	s.Stop()
+}
 
+func TestClient_SetForwardingPipelineConfig(t *testing.T) {
+	s := setup(t, getTLSServerConfig(t))
+
+	connManager := NewConnManager()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	target1 := createTestTarget(t, targetID1, deviceID1, true)
+
+	err := connManager.Connect(ctx, target1)
+	assert.NoError(t, err)
+	conn, err := connManager.GetByTarget(ctx, targetID1)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn)
+
+	_, err = conn.SetForwardingPipelineConfig(ctx, &p4api.SetForwardingPipelineConfigRequest{})
+	assert.NoError(t, err)
 	s.Stop()
 
 }
