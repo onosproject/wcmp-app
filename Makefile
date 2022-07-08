@@ -55,7 +55,7 @@ kind: images kind-only
 kind-only: # @HELP deploy the image without rebuilding first
 kind-only:
 	@if [ "`kind get clusters`" = '' ]; then echo "no kind cluster found" && exit 1; fi
-	kind load docker-image --name ${KIND_CLUSTER_NAME} ${DOCKER_REPOSITORY}wcmp-app:${ONOS_CONFIG_VERSION}
+	kind load docker-image --name ${KIND_CLUSTER_NAME} ${DOCKER_REPOSITORY}wcmp-app:${WCMP_APP_VERSION}
 
 all: build images
 
