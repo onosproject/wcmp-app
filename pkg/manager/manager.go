@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: 2022-present Intel Corporation
-// SPDX-FileCopyrightText: 2020-present Open Networking Foundation <info@opennetworking.org>
 //
 // SPDX-License-Identifier: Apache-2.0
 
 package manager
 
 import (
+	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
+	"github.com/onosproject/wcmp-app/pkg/store/topo"
 )
 
 var log = logging.GetLogger()
@@ -46,9 +47,18 @@ func (m *Manager) Run() {
 
 // Start initializes and starts controllers, stores, southbound modules.
 func (m *Manager) Start() error {
+	opts, err := certs.HandleCertPaths(m.Config.CAPath, m.Config.KeyPath, m.Config.CertPath, true)
+	if err != nil {
+		return err
+	}
 
+	// Create new topo store
+	_, err = topo.NewStore(m.Config.TopoAddress, opts...)
+	if err != nil {
+		return err
+	}
 	// Starts NB server
-	err := m.startNorthboundServer()
+	err = m.startNorthboundServer()
 	if err != nil {
 		return err
 	}
