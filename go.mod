@@ -3,9 +3,11 @@ module github.com/onosproject/wcmp-app
 go 1.16
 
 require (
-	github.com/google/uuid v1.1.2
+	github.com/atomix/atomix-go-client v0.6.2
+	github.com/google/uuid v1.3.0
 	github.com/onosproject/onos-api/go v0.9.19
 	github.com/onosproject/onos-lib-go v0.8.16
+	github.com/onosproject/onos-topo v0.9.5
 	github.com/p4lang/p4runtime v1.3.0
 	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.7.0
