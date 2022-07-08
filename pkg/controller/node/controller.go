@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2020-present Open Networking Foundation <info@opennetworking.org>
+// SPDX-FileCopyrightText: 2022-present Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -23,7 +23,6 @@ import (
 const (
 	defaultTimeout            = 30 * time.Second
 	defaultExpirationDuration = 30 * time.Second
-	defaultP4RTPort           = 9559
 )
 
 var log = logging.GetLogger()
