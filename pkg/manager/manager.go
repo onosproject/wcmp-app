@@ -8,6 +8,7 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
+	"github.com/onosproject/wcmp-app/pkg/controller/node"
 	"github.com/onosproject/wcmp-app/pkg/store/topo"
 )
 
@@ -53,7 +54,7 @@ func (m *Manager) Start() error {
 	}
 
 	// Create new topo store
-	_, err = topo.NewStore(m.Config.TopoAddress, opts...)
+	topoStore, err := topo.NewStore(m.Config.TopoAddress, opts...)
 	if err != nil {
 		return err
 	}
@@ -62,7 +63,19 @@ func (m *Manager) Start() error {
 	if err != nil {
 		return err
 	}
+	// Starts node controller
+	err = m.startNodeController(topoStore)
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+// startNodeController starts node controller
+func (m *Manager) startNodeController(topo topo.Store) error {
+	nodeController := node.NewController(topo)
+	return nodeController.Start()
 }
 
 // startSouthboundServer starts the northbound gRPC server
