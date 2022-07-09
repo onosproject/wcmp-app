@@ -17,6 +17,7 @@ type ConnID string
 type Conn interface {
 	Client
 	ID() ConnID
+	TargetID() topoapi.ID
 }
 
 type conn struct {

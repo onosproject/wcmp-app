@@ -8,7 +8,10 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
+	"github.com/onosproject/wcmp-app/pkg/controller/connection"
 	"github.com/onosproject/wcmp-app/pkg/controller/node"
+	"github.com/onosproject/wcmp-app/pkg/controller/target"
+	"github.com/onosproject/wcmp-app/pkg/southbound/p4rt"
 	"github.com/onosproject/wcmp-app/pkg/store/topo"
 )
 
@@ -53,6 +56,7 @@ func (m *Manager) Start() error {
 		return err
 	}
 
+	conns := p4rt.NewConnManager()
 	// Create new topo store
 	topoStore, err := topo.NewStore(m.Config.TopoAddress, opts...)
 	if err != nil {
@@ -68,6 +72,17 @@ func (m *Manager) Start() error {
 	if err != nil {
 		return err
 	}
+	// Starts connection controller
+	err = m.startConnController(topoStore, conns)
+	if err != nil {
+		return err
+	}
+
+	// Starts target controller
+	err = m.startTargetController(topoStore, conns)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -76,6 +91,18 @@ func (m *Manager) Start() error {
 func (m *Manager) startNodeController(topo topo.Store) error {
 	nodeController := node.NewController(topo)
 	return nodeController.Start()
+}
+
+// startConnController starts connection controller
+func (m *Manager) startConnController(topo topo.Store, conns p4rt.ConnManager) error {
+	connController := connection.NewController(topo, conns)
+	return connController.Start()
+}
+
+// startTargetController starts target controller
+func (m *Manager) startTargetController(topo topo.Store, conns p4rt.ConnManager) error {
+	targetController := target.NewController(topo, conns)
+	return targetController.Start()
 }
 
 // startSouthboundServer starts the northbound gRPC server

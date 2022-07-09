@@ -36,13 +36,13 @@ func newDestination(target *topoapi.Object) (*Destination, error) {
 	p4rtServerInfo := &topoapi.P4RTServerInfo{}
 	err := target.GetAspect(p4rtServerInfo)
 	if err != nil {
-		return nil, errors.NewInvalid("target entity %s must have 'onos.topo.Configurable' aspect to work with onos-config", target.ID)
+		return nil, errors.NewInvalid("target entity %s must have 'onos.topo.Configurable' aspect to work with controller", target.ID)
 	}
 
 	tlsOptions := &topoapi.TLSOptions{}
 	err = target.GetAspect(tlsOptions)
 	if err != nil {
-		return nil, errors.NewInvalid("topo entity %s must have 'onos.topo.TLSOptions' aspect to work with onos-config", target.ID)
+		return nil, errors.NewInvalid("topo entity %s must have 'onos.topo.TLSOptions' aspect to work with controller", target.ID)
 	}
 
 	timeout := defaultTimeout
