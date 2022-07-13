@@ -2,16 +2,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package node
+package mastership
 
 import (
 	"context"
 	"sync"
 
+	"github.com/onosproject/wcmp-app/pkg/store/topo"
+
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
-	"github.com/onosproject/wcmp-app/pkg/controller/utils"
-	"github.com/onosproject/wcmp-app/pkg/store/topo"
 )
 
 const queueSize = 100
@@ -42,16 +42,24 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 	w.cancel = cancel
 
 	go func() {
-		ch <- controller.NewID(utils.GetControllerID())
 		for event := range eventCh {
-			log.Debugw("Received topo event", "topo object ID", event.Object.ID)
-			if entity, ok := event.Object.Obj.(*topoapi.Object_Entity); ok &&
-				entity.Entity.KindID == topoapi.ControllerKind {
-				ch <- controller.NewID(event.Object.ID)
+			log.Debugw("Received topo event", "Topo Object ID", event.Object.ID)
+			if relation, ok := event.Object.Obj.(*topoapi.Object_Relation); ok &&
+				relation.Relation.KindID == topoapi.CONTROLS {
+				targetEntityID := relation.Relation.TgtEntityID
+				ch <- controller.NewID(targetEntityID)
 			}
+			/*if _, ok := event.Object.Obj.(*topoapi.Object_Entity); ok {
+				err = event.Object.GetAspect(&topoapi.P4RTServerInfo{})
+				if err == nil {
+					ch <- controller.NewID(event.Object.ID)
+				}
+			}*/
+
 		}
 		close(ch)
 	}()
+
 	return nil
 }
 

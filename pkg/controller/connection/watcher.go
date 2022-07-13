@@ -90,6 +90,7 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 	w.cancel = cancel
 	go func() {
 		for event := range eventCh {
+			log.Debugw("Received topo event", "topo object ID", event.Object.ID)
 			if relation, ok := event.Object.Obj.(*topoapi.Object_Relation); ok {
 				if relation.Relation.KindID == topoapi.CONTROLS &&
 					relation.Relation.SrcEntityID == utils.GetControllerID() {

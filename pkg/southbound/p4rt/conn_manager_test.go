@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
+	"sync"
 
 	"io"
 	"testing"
@@ -33,6 +34,7 @@ func newTestServer() *testServer {
 
 type testServer struct {
 	northbound.Service
+	p4api.UnimplementedP4RuntimeServer
 }
 
 func (s testServer) Write(ctx context.Context, request *p4api.WriteRequest) (*p4api.WriteResponse, error) {
@@ -369,19 +371,53 @@ func TestClient_SetMasterArbitration(t *testing.T) {
 	defer cancel()
 
 	target1 := createTestTarget(t, targetID1, deviceID1, true)
+	target2 := createTestTarget(t, targetID2, deviceID2, true)
 
 	err := connManager.Connect(ctx, target1)
 	assert.NoError(t, err)
-	conn, err := connManager.GetByTarget(ctx, targetID1)
-	assert.NoError(t, err)
-	assert.NotNil(t, conn)
 
-	arbitrationUpdate, err := conn.SetMasterArbitration(ctx, deviceID1, 2)
+	err = connManager.Connect(ctx, target2)
 	assert.NoError(t, err)
-	assert.Equal(t, int32(0), arbitrationUpdate.Arbitration.Status.Code)
-	assert.Equal(t, uint64(2), arbitrationUpdate.Arbitration.ElectionId.Low)
-	assert.Equal(t, uint64(0), arbitrationUpdate.Arbitration.ElectionId.High)
-	assert.Equal(t, uint64(deviceID1), arbitrationUpdate.Arbitration.DeviceId)
+
+	conn1, err := connManager.GetByTarget(ctx, targetID1)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn1)
+
+	conn2, err := connManager.GetByTarget(ctx, targetID2)
+	assert.NoError(t, err)
+	assert.NotNil(t, conn2)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		for i := 0; i < 10; i++ {
+			resp, err := conn1.RecvArbitrationResponse()
+			assert.NoError(t, err)
+			assert.Equal(t, uint64(1), resp.Arbitration.ElectionId.Low)
+			//t.Log(resp)
+		}
+		for i := 0; i < 10; i++ {
+			resp, err := conn2.RecvArbitrationResponse()
+			assert.NoError(t, err)
+			assert.Equal(t, uint64(2), resp.Arbitration.ElectionId.Low)
+			//t.Log(resp)
+		}
+		wg.Done()
+	}()
+
+	assert.NoError(t, err)
+	for i := 0; i < 10; i++ {
+		err = conn2.SendArbitrationRequest(deviceID2, 2, "")
+		assert.NoError(t, err)
+	}
+
+	for i := 0; i < 10; i++ {
+		err = conn1.SendArbitrationRequest(deviceID1, 1, "")
+		assert.NoError(t, err)
+	}
+
+	wg.Wait()
+
 	s.Stop()
 }
 

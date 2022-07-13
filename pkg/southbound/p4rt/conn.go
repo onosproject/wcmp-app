@@ -43,13 +43,12 @@ func newConnID() ConnID {
 	return connID
 }
 
-func newConn(targetID topoapi.ID, client *client) Conn {
+func newConn(targetID topoapi.ID, p4rtClient *client) Conn {
 	conn := &conn{
-		client:   client,
+		client:   p4rtClient,
 		id:       newConnID(),
 		targetID: targetID,
 	}
-
 	return conn
 }
 

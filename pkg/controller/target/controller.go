@@ -17,7 +17,7 @@ import (
 	"github.com/onosproject/wcmp-app/pkg/store/topo"
 )
 
-var log = logging.GetLogger("controller", "target")
+var log = logging.GetLogger()
 
 const (
 	defaultTimeout = 30 * time.Second

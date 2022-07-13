@@ -5,52 +5,40 @@
 package p4rt
 
 import (
-	"context"
+	"github.com/onosproject/onos-lib-go/pkg/errors"
 	p4api "github.com/p4lang/p4runtime/go/p4/v1"
-	"io"
 )
 
-type StreamChannelClient interface {
-	SetMasterArbitration(ctx context.Context, deviceID uint64, electionID uint64) (*p4api.StreamMessageResponse_Arbitration, error)
+// StreamClient p4runtime master stream client
+type StreamClient interface {
+	SendArbitrationRequest(deviceID uint64, electionID uint64, role string) error
+	RecvArbitrationResponse() (*p4api.StreamMessageResponse_Arbitration, error)
 }
 
-type streamChannelClient struct {
+type streamClient struct {
 	p4runtimeClient p4api.P4RuntimeClient
+	streamChannel   p4api.P4Runtime_StreamChannelClient
 }
 
-func (s *streamChannelClient) SetMasterArbitration(ctx context.Context, deviceID uint64, electionID uint64) (*p4api.StreamMessageResponse_Arbitration, error) {
-	streamChannel, err := s.p4runtimeClient.StreamChannel(ctx)
+func (s *streamClient) RecvArbitrationResponse() (*p4api.StreamMessageResponse_Arbitration, error) {
+	in, err := s.streamChannel.Recv()
 	if err != nil {
 		return nil, err
 	}
-	defer func(streamChannel p4api.P4Runtime_StreamChannelClient) {
-		err := streamChannel.CloseSend()
+
+	switch v := in.Update.(type) {
+	case *p4api.StreamMessageResponse_Arbitration:
+		log.Infow("Received arbitration response", "response", v)
 		if err != nil {
-			log.Warnw("Failed closing stream channel", "error", err)
-			return
+			return nil, err
 		}
-	}(streamChannel)
-	errCh := make(chan error)
-	var result *p4api.StreamMessageResponse_Arbitration
-	go func() {
-		for {
-			in, err := streamChannel.Recv()
-			if err == io.EOF {
-				errCh <- nil
-			}
-			if err != nil {
-				errCh <- err
-			}
-			arbitration, ok := in.Update.(*p4api.StreamMessageResponse_Arbitration)
-			if !ok {
-				continue
-			}
-			result = arbitration
-			errCh <- nil
-		}
+		return v, nil
+	}
+	return nil, errors.NewNotSupported("not an arbitration response message")
 
-	}()
+}
 
+func (s *streamClient) SendArbitrationRequest(deviceID uint64, electionID uint64, role string) error {
 	request := &p4api.StreamMessageRequest{
 		Update: &p4api.StreamMessageRequest_Arbitration{Arbitration: &p4api.MasterArbitrationUpdate{
 			DeviceId: deviceID,
@@ -58,19 +46,14 @@ func (s *streamChannelClient) SetMasterArbitration(ctx context.Context, deviceID
 				Low:  electionID,
 				High: 0,
 			},
+			Role: &p4api.Role{
+				Name: role,
+			},
 		}},
 	}
-	err = streamChannel.Send(request)
-	if err != nil {
-		return nil, err
-	}
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case err := <-errCh:
-		return result, err
-
-	}
+	log.Infow("Sending master arbitration request", "request", request)
+	err := s.streamChannel.Send(request)
+	return err
 }
 
-var _ StreamChannelClient = &streamChannelClient{}
+var _ StreamClient = &streamClient{}

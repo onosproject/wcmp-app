@@ -9,6 +9,7 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 	"github.com/onosproject/wcmp-app/pkg/controller/connection"
+	"github.com/onosproject/wcmp-app/pkg/controller/mastership"
 	"github.com/onosproject/wcmp-app/pkg/controller/node"
 	"github.com/onosproject/wcmp-app/pkg/controller/target"
 	"github.com/onosproject/wcmp-app/pkg/southbound/p4rt"
@@ -56,12 +57,12 @@ func (m *Manager) Start() error {
 		return err
 	}
 
-	conns := p4rt.NewConnManager()
 	// Create new topo store
 	topoStore, err := topo.NewStore(m.Config.TopoAddress, opts...)
 	if err != nil {
 		return err
 	}
+	conns := p4rt.NewConnManager()
 	// Starts NB server
 	err = m.startNorthboundServer()
 	if err != nil {
@@ -80,6 +81,11 @@ func (m *Manager) Start() error {
 
 	// Starts target controller
 	err = m.startTargetController(topoStore, conns)
+	if err != nil {
+		return err
+	}
+	// Starts mastership controller
+	err = m.startMastershipController(topoStore, conns)
 	if err != nil {
 		return err
 	}
@@ -103,6 +109,12 @@ func (m *Manager) startConnController(topo topo.Store, conns p4rt.ConnManager) e
 func (m *Manager) startTargetController(topo topo.Store, conns p4rt.ConnManager) error {
 	targetController := target.NewController(topo, conns)
 	return targetController.Start()
+}
+
+// startMastershipController starts mastership controller
+func (m *Manager) startMastershipController(topo topo.Store, conns p4rt.ConnManager) error {
+	mastershipController := mastership.NewController(topo, conns)
+	return mastershipController.Start()
 }
 
 // startSouthboundServer starts the northbound gRPC server

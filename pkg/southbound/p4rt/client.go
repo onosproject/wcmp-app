@@ -17,22 +17,28 @@ type Client interface {
 	io.Closer
 	WriteClient
 	ReadClient
-	StreamChannelClient
+	StreamClient
 	PipelineConfigClient
 	Capabilities(ctx context.Context, request *p4api.CapabilitiesRequest, opts ...grpc.CallOption) (*p4api.CapabilitiesResponse, error)
 }
 
 type client struct {
+	grpcClient           *grpc.ClientConn
 	p4runtimeClient      p4api.P4RuntimeClient
 	writeClient          *writeClient
 	readClient           *readClient
 	pipelineConfigClient *pipelineConfigClient
-	streamChannelClient  *streamChannelClient
+	streamClient         *streamClient
 }
 
-func (c *client) SetMasterArbitration(ctx context.Context, deviceID uint64, electionID uint64) (*p4api.StreamMessageResponse_Arbitration, error) {
-	arbitrationResponse, err := c.streamChannelClient.SetMasterArbitration(ctx, deviceID, electionID)
-	return arbitrationResponse, errors.FromGRPC(err)
+func (c *client) RecvArbitrationResponse() (*p4api.StreamMessageResponse_Arbitration, error) {
+	response, err := c.streamClient.RecvArbitrationResponse()
+	return response, errors.FromGRPC(err)
+}
+
+func (c *client) SendArbitrationRequest(deviceID uint64, electionID uint64, role string) error {
+	err := c.streamClient.SendArbitrationRequest(deviceID, electionID, role)
+	return errors.FromGRPC(err)
 }
 
 func (c *client) ReadEntities(ctx context.Context, request *p4api.ReadRequest, opts ...grpc.CallOption) ([]*p4api.Entity, error) {
@@ -66,21 +72,6 @@ func (c *client) GetForwardingPipelineConfig(ctx context.Context, request *p4api
 	return getForwardingPipelineConfigResponse, errors.FromGRPC(err)
 }
 
-// StreamChannel Represents the bidirectional stream between the controller and the
-// switch (initiated by the controller), and is managed for the following
-// purposes:
-// - connection initiation through client arbitration
-// - indicating switch session liveness: the session is live when switch
-// - sends a positive client arbitration update to the controller, and is
-// - considered dead when either the stream breaks or the switch sends a
-// - negative update for client arbitration
-// - the controller sending/receiving packets to/from the switch
-// - streaming of notifications from the switch
-func (c *client) StreamChannel(ctx context.Context, opts ...grpc.CallOption) (p4api.P4Runtime_StreamChannelClient, error) {
-	streamChannelClient, err := c.p4runtimeClient.StreamChannel(ctx, opts...)
-	return streamChannelClient, errors.FromGRPC(err)
-}
-
 // Capabilities discovers the capabilities of the P4Runtime server implementation.
 func (c *client) Capabilities(ctx context.Context, request *p4api.CapabilitiesRequest, opts ...grpc.CallOption) (*p4api.CapabilitiesResponse, error) {
 	log.Infow("Received Capabilities request", "request", request)
@@ -89,7 +80,7 @@ func (c *client) Capabilities(ctx context.Context, request *p4api.CapabilitiesRe
 }
 
 func (c *client) Close() error {
-	return nil
+	return c.grpcClient.Close()
 }
 
 var _ Client = &client{}

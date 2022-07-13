@@ -111,7 +111,6 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 	}
 
 	m.targets[target.ID] = p4rtClient
-
 	go func() {
 		var conn Conn
 		state := clientConn.GetState()
@@ -120,6 +119,7 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 			conn = newConn(target.ID, p4rtClient)
 			m.addConn(conn)
 		}
+
 		for clientConn.WaitForStateChange(context.Background(), state) {
 			state = clientConn.GetState()
 			log.Infow("Connection state changed for Target", "target ID", target.ID, "state", state)
@@ -134,6 +134,7 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 					conn = newConn(target.ID, p4rtClient)
 					m.addConn(conn)
 				}
+
 			case connectivity.Idle:
 				clientConn.Connect()
 			default:
@@ -151,6 +152,7 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 			}
 		}
 	}()
+
 	return nil
 }
 
@@ -244,7 +246,12 @@ func connect(ctx context.Context, d Destination, opts ...grpc.DialOption) (*clie
 	}
 
 	cl := p4v1.NewP4RuntimeClient(conn)
+	streamChannel, err := cl.StreamChannel(context.Background())
+	if err != nil {
+		return nil, nil, err
+	}
 	p4rtClient := &client{
+		grpcClient:      conn,
 		p4runtimeClient: cl,
 		writeClient: &writeClient{
 			p4runtimeClient: cl,
@@ -255,8 +262,9 @@ func connect(ctx context.Context, d Destination, opts ...grpc.DialOption) (*clie
 		pipelineConfigClient: &pipelineConfigClient{
 			p4runtimeClient: cl,
 		},
-		streamChannelClient: &streamChannelClient{
+		streamClient: &streamClient{
 			p4runtimeClient: cl,
+			streamChannel:   streamChannel,
 		},
 	}
 
