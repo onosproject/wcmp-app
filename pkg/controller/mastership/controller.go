@@ -14,6 +14,7 @@ import (
 	"github.com/onosproject/wcmp-app/pkg/southbound/p4rt"
 	"github.com/onosproject/wcmp-app/pkg/store/topo"
 	"google.golang.org/genproto/googleapis/rpc/code"
+	"io"
 
 	"time"
 )
@@ -137,11 +138,10 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 					log.Warnw("Failed to reconcile mastership election for the P4RT target", "targetID", targetEntity.ID, "error", err)
 					return controller.Result{}, nil
 				}
-				log.Warnw("Failed to reconcile mastership election for the P4RT target", "targetID", targetEntity.ID, "error", err)
+				log.Warnw("Failed to reconcile mastership election for the P4RT target", "targetID", targetEntity.ID, "error", err.Error())
 				return controller.Result{}, err
 			}
 			response, err := conn.RecvArbitrationResponse()
-
 			if err != nil {
 				log.Warnw("Failed to reconcile mastership election for the P4RT target", "targetID", targetEntity.ID, "error", err)
 				// If the election_id is set and is already used by another controller
@@ -150,10 +150,19 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 					log.Warnw("Invalid argument, failed to reconcile mastership election for the P4RT target", "error", err)
 					return controller.Result{}, err
 				}
+				if err == io.EOF {
+					log.Warnw("End of file")
+					return controller.Result{}, nil
+				}
 
 			}
-			statusCode := response.Arbitration.Status.Code
 
+			/*status is set differently based on whether the notification is sent to the primary or a backup controller:
+			If there is a primary:
+			   * For the primary, status is OK (with status.code set to google.rpc.OK).
+			   * For all backup controllers, status is set to non-OK (with status.code set to google.rpc.ALREADY_EXISTS).
+			Otherwise, if there is no primary currently, for all backup controllers, status is set to non-OK (with status.code set to google.rpc.NOT_FOUND).*/
+			statusCode := response.Arbitration.Status.Code
 			if statusCode == int32(code.Code_OK) {
 				for _, targetRelation := range targetRelations {
 					if targetRelation.GetRelation().SrcEntityID == utils.GetControllerID() {
@@ -167,7 +176,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 							return controller.Result{}, err
 						}
 
-						// Update the gNMI target entity
+						// Update mastership state in the P4RT target entity
 						err = r.topo.Update(ctx, targetEntity)
 						if err != nil {
 							if !errors.IsNotFound(err) && !errors.IsConflict(err) {
@@ -192,6 +201,5 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 			return controller.Result{}, nil
 		}
 	}
-
 	return controller.Result{}, nil
 }

@@ -111,12 +111,19 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 	}
 
 	m.targets[target.ID] = p4rtClient
+	streamChannel, err := p4rtClient.p4runtimeClient.StreamChannel(context.Background())
+	if err != nil {
+		log.Errorw("Cannot open a p4rt stream for connection", "targetID", target.ID, "error", err)
+		return err
+	}
+	p4rtClient.streamClient.streamChannel = streamChannel
 	go func() {
 		var conn Conn
 		state := clientConn.GetState()
 		switch state {
 		case connectivity.Ready:
 			conn = newConn(target.ID, p4rtClient)
+
 			m.addConn(conn)
 		}
 
@@ -132,6 +139,12 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 			case connectivity.Ready:
 				if conn == nil {
 					conn = newConn(target.ID, p4rtClient)
+					streamChannel, err := p4rtClient.p4runtimeClient.StreamChannel(context.Background())
+					if err != nil {
+						log.Warnw("Cannot open a p4rt stream for connection", "targetID", target.ID, "error", err)
+						continue
+					}
+					p4rtClient.streamClient.streamChannel = streamChannel
 					m.addConn(conn)
 				}
 
@@ -246,10 +259,7 @@ func connect(ctx context.Context, d Destination, opts ...grpc.DialOption) (*clie
 	}
 
 	cl := p4v1.NewP4RuntimeClient(conn)
-	streamChannel, err := cl.StreamChannel(context.Background())
-	if err != nil {
-		return nil, nil, err
-	}
+
 	p4rtClient := &client{
 		grpcClient:      conn,
 		p4runtimeClient: cl,
@@ -264,7 +274,6 @@ func connect(ctx context.Context, d Destination, opts ...grpc.DialOption) (*clie
 		},
 		streamClient: &streamClient{
 			p4runtimeClient: cl,
-			streamChannel:   streamChannel,
 		},
 	}
 
