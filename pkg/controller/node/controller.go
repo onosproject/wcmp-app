@@ -64,8 +64,18 @@ func (r *Reconciler) createControllerEntity(ctx context.Context, controllerID to
 	leaseAspect := &topoapi.Lease{
 		Expiration: &expiration,
 	}
+	controllerAspect := &topoapi.ControllerInfo{
+		Role: &topoapi.ControllerRole{
+			Name: "",
+		},
+		Type: topoapi.ControllerInfo_P4RUNTIME,
+	}
 
 	err := object.SetAspect(leaseAspect)
+	if err != nil {
+		return err
+	}
+	err = object.SetAspect(controllerAspect)
 	if err != nil {
 		return err
 	}

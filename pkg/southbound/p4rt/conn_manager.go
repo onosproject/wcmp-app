@@ -111,15 +111,22 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 	}
 
 	m.targets[target.ID] = p4rtClient
-
+	streamChannel, err := p4rtClient.p4runtimeClient.StreamChannel(context.Background())
+	if err != nil {
+		log.Errorw("Cannot open a p4rt stream for connection", "targetID", target.ID, "error", err)
+		return err
+	}
+	p4rtClient.streamClient.streamChannel = streamChannel
 	go func() {
 		var conn Conn
 		state := clientConn.GetState()
 		switch state {
 		case connectivity.Ready:
 			conn = newConn(target.ID, p4rtClient)
+
 			m.addConn(conn)
 		}
+
 		for clientConn.WaitForStateChange(context.Background(), state) {
 			state = clientConn.GetState()
 			log.Infow("Connection state changed for Target", "target ID", target.ID, "state", state)
@@ -132,8 +139,15 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 			case connectivity.Ready:
 				if conn == nil {
 					conn = newConn(target.ID, p4rtClient)
+					streamChannel, err := p4rtClient.p4runtimeClient.StreamChannel(context.Background())
+					if err != nil {
+						log.Warnw("Cannot open a p4rt stream for connection", "targetID", target.ID, "error", err)
+						continue
+					}
+					p4rtClient.streamClient.streamChannel = streamChannel
 					m.addConn(conn)
 				}
+
 			case connectivity.Idle:
 				clientConn.Connect()
 			default:
@@ -151,6 +165,7 @@ func (m *connManager) Connect(ctx context.Context, target *topoapi.Object) error
 			}
 		}
 	}()
+
 	return nil
 }
 
@@ -244,7 +259,9 @@ func connect(ctx context.Context, d Destination, opts ...grpc.DialOption) (*clie
 	}
 
 	cl := p4v1.NewP4RuntimeClient(conn)
+
 	p4rtClient := &client{
+		grpcClient:      conn,
 		p4runtimeClient: cl,
 		writeClient: &writeClient{
 			p4runtimeClient: cl,
@@ -255,7 +272,7 @@ func connect(ctx context.Context, d Destination, opts ...grpc.DialOption) (*clie
 		pipelineConfigClient: &pipelineConfigClient{
 			p4runtimeClient: cl,
 		},
-		streamChannelClient: &streamChannelClient{
+		streamClient: &streamClient{
 			p4runtimeClient: cl,
 		},
 	}
