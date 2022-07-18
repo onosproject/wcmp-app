@@ -8,12 +8,9 @@ import (
 	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
-	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/wcmp-app/pkg/store/topo"
 	"sync"
 )
-
-var log = logging.GetLogger()
 
 const queueSize = 100
 
