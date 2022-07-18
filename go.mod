@@ -19,3 +19,5 @@ require (
 	google.golang.org/grpc v1.41.0
 	k8s.io/client-go v0.22.1
 )
+
+replace github.com/onosproject/onos-api/go => /Users/arastega/go/src/github.com/onosproject/onos-api/go

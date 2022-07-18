@@ -25,7 +25,7 @@ const (
 
 // NewController returns a new P4RT target  controller
 func NewController(topo topo.Store, conns p4rt.ConnManager) *controller.Controller {
-	c := controller.NewController("connection")
+	c := controller.NewController("target")
 	c.Watch(&TopoWatcher{
 		topo: topo,
 	})
