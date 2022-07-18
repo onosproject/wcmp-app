@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc"
 )
 
+// WriteClient :
 type WriteClient interface {
 	Write(ctx context.Context, request *p4api.WriteRequest, opts ...grpc.CallOption) (*p4api.WriteResponse, error)
 }
@@ -19,6 +20,7 @@ type writeClient struct {
 	p4runtimeClient p4api.P4RuntimeClient
 }
 
+// Write :
 func (w *writeClient) Write(ctx context.Context, request *p4api.WriteRequest, opts ...grpc.CallOption) (*p4api.WriteResponse, error) {
 	response, err := w.p4runtimeClient.Write(ctx, request, opts...)
 	return response, errors.FromGRPC(err)

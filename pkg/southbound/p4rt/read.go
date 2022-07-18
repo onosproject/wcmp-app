@@ -11,6 +11,7 @@ import (
 	"io"
 )
 
+// ReadClient :
 type ReadClient interface {
 	ReadEntities(ctx context.Context, request *p4api.ReadRequest, opts ...grpc.CallOption) ([]*p4api.Entity, error)
 }
@@ -19,6 +20,7 @@ type readClient struct {
 	p4runtimeClient p4api.P4RuntimeClient
 }
 
+// ReadEntities :
 func (r readClient) ReadEntities(ctx context.Context, request *p4api.ReadRequest, opts ...grpc.CallOption) ([]*p4api.Entity, error) {
 	stream, err := r.p4runtimeClient.Read(ctx, request, opts...)
 	if err != nil {
