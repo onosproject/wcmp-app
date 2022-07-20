@@ -6,20 +6,29 @@ package p4rtsimulator
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"testing"
 	"time"
-	"github.com/onosproject/onos-lib-go/pkg/errors"
 	"github.com/onosproject/onos-test/pkg/onostest"
 	"github.com/onosproject/helmit/pkg/helm"
-	"github.com/onosproject/helmit/pkg/kubernetes"
 	"github.com/stretchr/testify/assert"
+	"github.com/onosproject/helmit/pkg/util/random"
 )
+
+const (
+	// Maximum time for an entire test to complete
+	defaultTestTimeout = 3 * time.Minute
+)
+
+
+// MakeContext returns a new context for use in GNMI requests
+func MakeContext() (context.Context, context.CancelFunc) {
+	ctx := context.Background()
+	return context.WithTimeout(ctx, defaultTestTimeout)
+}
 
 // CreateSimulator creates a device simulator
 func CreateSimulator(ctx context.Context, t *testing.T) *helm.HelmRelease {
-	return CreateSimulatorWithName(ctx, t, random.NewPetName(2), true)
+	return CreateSimulatorWithName(ctx, t, random.NewPetName(2))
 }
 
 // CreateSimulatorWithName creates a device simulator
