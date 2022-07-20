@@ -12,6 +12,7 @@ import (
 	"github.com/onosproject/wcmp-app/pkg/controller/mastership"
 	"github.com/onosproject/wcmp-app/pkg/controller/node"
 	"github.com/onosproject/wcmp-app/pkg/controller/target"
+	"github.com/onosproject/wcmp-app/pkg/pluginregistry"
 	"github.com/onosproject/wcmp-app/pkg/southbound/p4rt"
 	"github.com/onosproject/wcmp-app/pkg/store/topo"
 )
@@ -25,6 +26,7 @@ type Config struct {
 	CertPath    string
 	TopoAddress string
 	GRPCPort    int
+	P4Plugins   []string
 }
 
 // Manager single point of entry for the wcmp-app
@@ -35,6 +37,12 @@ type Manager struct {
 // NewManager initializes the application manager
 func NewManager(cfg Config) *Manager {
 	log.Infow("Creating manager")
+	p4PluginRegistry := pluginregistry.NewP4PluginRegistry()
+	for _, smp := range cfg.P4Plugins {
+		if err := p4PluginRegistry.RegisterPlugin(smp); err != nil {
+			log.Fatal(err)
+		}
+	}
 	mgr := Manager{
 		Config: cfg,
 	}
