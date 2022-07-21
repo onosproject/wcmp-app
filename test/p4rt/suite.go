@@ -14,23 +14,12 @@ type testSuite struct {
 	test.Suite
 }
 
-// TestSuite is the onos-config GNMI test suite
+// TestSuite is the wcmp-app P4RT test suite
 type TestSuite struct {
 	testSuite
 }
 
-func getInt(value interface{}) int64 {
-	if i, ok := value.(int); ok {
-		return int64(i)
-	} else if i, ok := value.(float64); ok {
-		return int64(i)
-	} else if i, ok := value.(int64); ok {
-		return i
-	}
-	return 0
-}
-
-// SetupTestSuite sets up the onos-config GNMI test suite
+// SetupTestSuite sets up the wcmp-app P4RT test suite
 func (s *TestSuite) SetupTestSuite(c *input.Context) error {
 	registry := c.GetArg("registry").String("")
 	umbrella := charts.CreateUmbrellaRelease()

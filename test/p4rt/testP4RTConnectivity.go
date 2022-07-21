@@ -10,7 +10,7 @@ import (
 	"github.com/onosproject/wcmp-app/test/utils/p4rtsimulator"
 )
 
-func (s *TestSuite) testSinglePath(t *testing.T) {
+func (s *TestSuite) testP4RTConnectivity(t *testing.T) {
 	ctx, cancel := p4rtsimulator.MakeContext()
 	defer cancel()
 
