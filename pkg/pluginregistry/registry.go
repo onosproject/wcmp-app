@@ -72,8 +72,9 @@ func (p *pluginRegistry) RegisterPlugin(pluginName string) error {
 	pkgInfo, err := p4Plugin.GetPkgInfo()
 	if err != nil {
 		log.Warnw("Cannot retrieve P4 Program PkgInfo", "plugin name", pluginName)
+		return err
 	}
-	pluginID := p4rtapi.GetP4PluginID(pkgInfo.Name, pkgInfo.Version, pkgInfo.Arch)
+	pluginID := p4rtapi.NewP4PluginID(pkgInfo.Name, pkgInfo.Version, pkgInfo.Arch)
 	log.Infow("Registering a P4 plugin", "plugin ID", pluginID)
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -88,6 +89,7 @@ func NewP4PluginRegistry() P4PluginRegistry {
 	}
 }
 
+// P4Plugin p4 plugin interface
 type P4Plugin interface {
 	GetPkgInfo() (*p4configapi.PkgInfo, error)
 	GetP4DeviceConfig() ([]byte, error)
