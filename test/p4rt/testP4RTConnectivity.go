@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// TestP4RTConnectivity will test the connectivity
 func (s *TestSuite) TestP4RTConnectivity(t *testing.T) {
 	ctx, cancel := p4rtsimulator.MakeContext()
 	defer cancel()
