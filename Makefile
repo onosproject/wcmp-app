@@ -28,7 +28,6 @@ local-deps: local-helmit local-onos-api local-onos-lib-go local-onos-test local-
 build: # @HELP build the Go binaries and run all validations (default)
 build: mod-update local-deps
 	go build -mod=vendor -o build/_output/wcmp-app ./cmd/wcmp-app
-
 test: # @HELP run the unit tests and source code validation producing a golang style report
 test: mod-lint build linters license
 	go test -race github.com/onosproject/wcmp-app/...
