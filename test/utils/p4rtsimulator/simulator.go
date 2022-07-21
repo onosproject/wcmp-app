@@ -6,19 +6,18 @@ package p4rtsimulator
 
 import (
 	"context"
+	"github.com/onosproject/helmit/pkg/helm"
+	"github.com/onosproject/helmit/pkg/util/random"
+	"github.com/onosproject/onos-test/pkg/onostest"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
-	"github.com/onosproject/onos-test/pkg/onostest"
-	"github.com/onosproject/helmit/pkg/helm"
-	"github.com/stretchr/testify/assert"
-	"github.com/onosproject/helmit/pkg/util/random"
 )
 
 const (
 	// Maximum time for an entire test to complete
 	defaultTestTimeout = 3 * time.Minute
 )
-
 
 // MakeContext returns a new context for use in GNMI requests
 func MakeContext() (context.Context, context.CancelFunc) {
@@ -49,4 +48,3 @@ func CreateSimulatorWithName(ctx context.Context, t *testing.T, name string) *he
 func DeleteSimulator(t *testing.T, simulator *helm.HelmRelease) {
 	assert.NoError(t, simulator.Uninstall())
 }
-
