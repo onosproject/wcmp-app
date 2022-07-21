@@ -6,6 +6,7 @@ package config
 
 import (
 	"testing"
+	"time"
 	"github.com/onosproject/wcmp-app/test/utils/p4rtsimulator"
 )
 
@@ -14,6 +15,8 @@ func (s *TestSuite) testSinglePath(t *testing.T) {
 	defer cancel()
 
 	// Create a simulated device
-	simulator := p4rtsimulator.CreateSimulator(ctx, t)
+	simulator := p4rtsimulator.CreateSimulatorWithName(ctx, t, "stratum-simulator")
 	defer p4rtsimulator.DeleteSimulator(t, simulator)
+
+	time.Sleep(2 * time.Second)
 }
