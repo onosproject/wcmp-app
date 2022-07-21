@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2019-present Open Networking Foundation <info@opennetworking.org>
+# SPDX-FileCopyrightText: 2022-present Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -36,7 +36,10 @@ jenkins-test: # @HELP run the unit tests and source code validation producing a 
 jenkins-test: jenkins-tools mod-lint build linters license
 	TEST_PACKAGES=github.com/onosproject/wcmp-app/... ./build/build-tools/build/jenkins/make-unit
 
-integration-tests:  # @HELP run helmit integration tests locally
+helmit-p4rt: integration-test-namespace # @HELP run helmit tests locally
+	helmit test -n test ./cmd/wcmp-app-tests --suite p4rt
+
+integration-tests: helmit-p4rt # @HELP run helmit integration tests locally
 
 wcmp-app-docker: mod-update local-deps # @HELP build wcmp-app base Docker image
 	docker build --platform linux/amd64 . -f build/wcmp-app/Dockerfile \
