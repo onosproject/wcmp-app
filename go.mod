@@ -7,7 +7,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
 	github.com/onosproject/helmit v0.6.19
-	github.com/onosproject/onos-api/go v0.9.26
+	github.com/onosproject/onos-api/go v0.9.27
 	github.com/onosproject/onos-lib-go v0.8.16
 	github.com/onosproject/onos-ric-sdk-go v0.8.9
 	github.com/onosproject/onos-test v0.6.6
@@ -19,5 +19,3 @@ require (
 	google.golang.org/grpc v1.41.0
 	k8s.io/client-go v0.22.1
 )
-
-replace github.com/onosproject/onos-api/go => /Users/arastega/go/src/github.com/onosproject/onos-api/go

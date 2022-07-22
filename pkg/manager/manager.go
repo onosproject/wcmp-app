@@ -5,21 +5,26 @@
 package manager
 
 import (
+	"github.com/atomix/atomix-go-client/pkg/atomix"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
+	appController "github.com/onosproject/wcmp-app/pkg/app/controller"
 	"github.com/onosproject/wcmp-app/pkg/controller/connection"
 	"github.com/onosproject/wcmp-app/pkg/controller/mastership"
 	"github.com/onosproject/wcmp-app/pkg/controller/node"
+	pipelineconfigctrl "github.com/onosproject/wcmp-app/pkg/controller/pipelineconfig"
 	"github.com/onosproject/wcmp-app/pkg/controller/target"
 	"github.com/onosproject/wcmp-app/pkg/pluginregistry"
 	"github.com/onosproject/wcmp-app/pkg/southbound/p4rt"
+	"github.com/onosproject/wcmp-app/pkg/store/pipelineconfig"
 	"github.com/onosproject/wcmp-app/pkg/store/topo"
+	"os"
 )
 
 var log = logging.GetLogger()
 
-// Config is a manager configuration
+// Config is a manager pipelineconfig
 type Config struct {
 	CAPath      string
 	KeyPath     string
@@ -31,7 +36,8 @@ type Config struct {
 
 // Manager single point of entry for the wcmp-app
 type Manager struct {
-	Config Config
+	Config           Config
+	p4PluginRegistry pluginregistry.P4PluginRegistry
 }
 
 // NewManager initializes the application manager
@@ -44,7 +50,8 @@ func NewManager(cfg Config) *Manager {
 		}
 	}
 	mgr := Manager{
-		Config: cfg,
+		Config:           cfg,
+		p4PluginRegistry: p4PluginRegistry,
 	}
 	return &mgr
 }
@@ -65,11 +72,19 @@ func (m *Manager) Start() error {
 		return err
 	}
 
+	atomixClient := atomix.NewClient(atomix.WithClientID(os.Getenv("POD_NAME")))
 	// Create new topo store
 	topoStore, err := topo.NewStore(m.Config.TopoAddress, opts...)
 	if err != nil {
 		return err
 	}
+
+	// Create a new pipeline config data store
+	pipelineConfigStore, err := pipelineconfig.NewAtomixStore(atomixClient)
+	if err != nil {
+		return err
+	}
+
 	conns := p4rt.NewConnManager()
 	// Starts NB server
 	err = m.startNorthboundServer()
@@ -97,8 +112,24 @@ func (m *Manager) Start() error {
 	if err != nil {
 		return err
 	}
+	// Starts pipelineconfig controller
+	err = m.startPipelineConfigController(topoStore, conns, m.p4PluginRegistry, pipelineConfigStore)
+	if err != nil {
+		return err
+	}
+
+	err = m.startAppController(topoStore, pipelineConfigStore)
+	if err != nil {
+		return err
+	}
 
 	return nil
+}
+
+func (m *Manager) startAppController(topo topo.Store, pipelineConfigStore pipelineconfig.Store) error {
+	appCtrl := appController.NewController(topo, pipelineConfigStore)
+	return appCtrl.Start()
+
 }
 
 // startNodeController starts node controller
@@ -123,6 +154,13 @@ func (m *Manager) startTargetController(topo topo.Store, conns p4rt.ConnManager)
 func (m *Manager) startMastershipController(topo topo.Store, conns p4rt.ConnManager) error {
 	mastershipController := mastership.NewController(topo, conns)
 	return mastershipController.Start()
+}
+
+// startConfigurationController starts pipelineconfig controller
+func (m *Manager) startPipelineConfigController(topo topo.Store, conns p4rt.ConnManager, p4PluginRegistry pluginregistry.P4PluginRegistry, pipelineConfigStore pipelineconfig.Store) error {
+	configurationController := pipelineconfigctrl.NewController(topo, conns, p4PluginRegistry, pipelineConfigStore)
+	return configurationController.Start()
+
 }
 
 // startSouthboundServer starts the northbound gRPC server

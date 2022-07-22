@@ -2,17 +2,61 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package configuration
+package controller
 
 import (
 	"context"
+	p4rtapi "github.com/onosproject/onos-api/go/onos/p4rt/v1"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
+	"github.com/onosproject/wcmp-app/pkg/store/pipelineconfig"
 	"github.com/onosproject/wcmp-app/pkg/store/topo"
 	"sync"
 )
 
 const queueSize = 100
+
+// PipelineConfigWatcher pipeline config store watcher
+type PipelineConfigWatcher struct {
+	pipelineConfigs pipelineconfig.Store
+	cancel          context.CancelFunc
+	mu              sync.Mutex
+}
+
+// Start starts the watcher
+func (w *PipelineConfigWatcher) Start(ch chan<- controller.ID) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.cancel != nil {
+		return nil
+	}
+
+	eventCh := make(chan p4rtapi.ConfigurationEvent, queueSize)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	err := w.pipelineConfigs.Watch(ctx, eventCh, pipelineconfig.WithReplay())
+	if err != nil {
+		cancel()
+		return err
+	}
+	w.cancel = cancel
+	go func() {
+		for event := range eventCh {
+			ch <- controller.NewID(event.PipelineConfig.TargetID)
+		}
+	}()
+	return nil
+}
+
+// Stop stops the watcher
+func (w *PipelineConfigWatcher) Stop() {
+	w.mu.Lock()
+	if w.cancel != nil {
+		w.cancel()
+		w.cancel = nil
+	}
+	w.mu.Unlock()
+}
 
 // TopoWatcher is a topology watcher
 type TopoWatcher struct {

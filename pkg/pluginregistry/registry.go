@@ -93,4 +93,5 @@ func NewP4PluginRegistry() P4PluginRegistry {
 type P4Plugin interface {
 	GetPkgInfo() (*p4configapi.PkgInfo, error)
 	GetP4DeviceConfig() ([]byte, error)
+	GetP4Info() (info *p4configapi.P4Info, err error)
 }
