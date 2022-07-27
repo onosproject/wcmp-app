@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// ClientTopo R-NIB client interface
+// ClientTopo interface
 type ClientTopo interface {
 	GetControlRelations() ([]topoapi.Object, error)
 	GetSwitchEntities() ([]topoapi.Object, error)
@@ -57,6 +57,7 @@ func GetControlRelationFilter() *topoapi.Filters {
 func (c *Client) GetControlRelations() ([]topoapi.Object, error) {
 	filter := GetControlRelationFilter()
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
 	relationsList, err := c.client.List(ctx, toposdk.WithListFilters(filter))
 	cancel()
 	return relationsList, err
@@ -71,6 +72,7 @@ func GetSwitchFilter() *topoapi.Filters {
 func (c *Client) GetSwitchEntities() ([]topoapi.Object, error) {
 	filter := GetSwitchFilter()
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
 	switchList, err := c.client.List(ctx, toposdk.WithListFilters(filter))
 	cancel()
 	return switchList, err
@@ -85,6 +87,7 @@ func GetControllerFilter() *topoapi.Filters {
 func (c *Client) GetControllerEntities() ([]topoapi.Object, error) {
 	filter := GetControllerFilter()
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
 	controllerList, err := c.client.List(ctx, toposdk.WithListFilters(filter))
 	cancel()
 	return controllerList, err
