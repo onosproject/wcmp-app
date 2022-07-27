@@ -8,6 +8,8 @@ import (
 	"context"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	toposdk "github.com/onosproject/onos-ric-sdk-go/pkg/topo"
+	"github.com/stretchr/testify/assert"
+	"testing"
 	"time"
 )
 
@@ -16,6 +18,7 @@ type ClientTopo interface {
 	GetControlRelations() ([]topoapi.Object, error)
 	GetSwitchEntities() ([]topoapi.Object, error)
 	GetControllerEntities() ([]topoapi.Object, error)
+	WaitForTargetAvailable(ctx context.Context, t *testing.T, objectID topoapi.ID, timeout time.Duration) bool
 }
 
 // NewClientTopo creates a new topo SDK client
@@ -91,4 +94,42 @@ func (c *Client) GetControllerEntities() ([]topoapi.Object, error) {
 	controllerList, err := c.client.List(ctx, toposdk.WithListFilters(filter))
 	cancel()
 	return controllerList, err
+}
+
+// WaitForControlRelation waits to create control relation for a given target
+func WaitForControlRelation(ctx context.Context, t *testing.T, predicate func(*topoapi.Relation, topoapi.Event) bool, timeout time.Duration) bool {
+	cl, err := NewClientTopo()
+	assert.NoError(t, err)
+	stream := make(chan topoapi.Event)
+	err = cl.client.Watch(ctx, stream, toposdk.WithWatchFilters(GetControlRelationFilter()))
+	assert.NoError(t, err)
+	for event := range stream {
+		if predicate(event.Object.GetRelation(), event) {
+			return true
+		} // Otherwise, loop and wait for the next topo event
+	}
+
+	return false
+}
+
+// WaitForTargetAvailable waits for a target to become available
+func WaitForTargetAvailable(ctx context.Context, t *testing.T, objectID topoapi.ID, timeout time.Duration) bool {
+	return WaitForControlRelation(ctx, t, func(rel *topoapi.Relation, event topoapi.Event) bool {
+		if rel.TgtEntityID != objectID {
+			t.Logf("Topo %v event from %s (expected %s). Discarding\n", event.Type, rel.TgtEntityID, objectID)
+			return false
+		}
+
+		if event.Type == topoapi.EventType_ADDED || event.Type == topoapi.EventType_UPDATED || event.Type == topoapi.EventType_NONE {
+			cl, err := NewClientTopo()
+			assert.NoError(t, err)
+			_, err = cl.client.Get(ctx, event.Object.ID)
+			if err == nil {
+				t.Logf("Target %s is available", objectID)
+				return true
+			}
+		}
+
+		return false
+	}, timeout)
 }
