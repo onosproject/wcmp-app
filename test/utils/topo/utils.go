@@ -18,6 +18,7 @@ type ClientTopo interface {
 	GetControlRelations() ([]topoapi.Object, error)
 	GetSwitchEntities() ([]topoapi.Object, error)
 	GetControllerEntities() ([]topoapi.Object, error)
+	WaitForControlRelation(ctx context.Context, t *testing.T, predicate func(*topoapi.Relation, topoapi.Event) bool, timeout time.Duration) bool
 	WaitForTargetAvailable(ctx context.Context, t *testing.T, objectID topoapi.ID, timeout time.Duration) bool
 }
 
@@ -97,11 +98,9 @@ func (c *Client) GetControllerEntities() ([]topoapi.Object, error) {
 }
 
 // WaitForControlRelation waits to create control relation for a given target
-func WaitForControlRelation(ctx context.Context, t *testing.T, predicate func(*topoapi.Relation, topoapi.Event) bool, timeout time.Duration) bool {
-	cl, err := NewClientTopo()
-	assert.NoError(t, err)
+func (c *Client) WaitForControlRelation(ctx context.Context, t *testing.T, predicate func(*topoapi.Relation, topoapi.Event) bool, timeout time.Duration) bool {
 	stream := make(chan topoapi.Event)
-	err = cl.client.Watch(ctx, stream, toposdk.WithWatchFilters(GetControlRelationFilter()))
+	err := c.client.Watch(ctx, stream, toposdk.WithWatchFilters(GetControlRelationFilter()))
 	assert.NoError(t, err)
 	for event := range stream {
 		if predicate(event.Object.GetRelation(), event) {
@@ -113,17 +112,15 @@ func WaitForControlRelation(ctx context.Context, t *testing.T, predicate func(*t
 }
 
 // WaitForTargetAvailable waits for a target to become available
-func WaitForTargetAvailable(ctx context.Context, t *testing.T, objectID topoapi.ID, timeout time.Duration) bool {
-	return WaitForControlRelation(ctx, t, func(rel *topoapi.Relation, event topoapi.Event) bool {
+func (c *Client) WaitForTargetAvailable(ctx context.Context, t *testing.T, objectID topoapi.ID, timeout time.Duration) bool {
+	return c.WaitForControlRelation(ctx, t, func(rel *topoapi.Relation, event topoapi.Event) bool {
 		if rel.TgtEntityID != objectID {
 			t.Logf("Topo %v event from %s (expected %s). Discarding\n", event.Type, rel.TgtEntityID, objectID)
 			return false
 		}
 
 		if event.Type == topoapi.EventType_ADDED || event.Type == topoapi.EventType_UPDATED || event.Type == topoapi.EventType_NONE {
-			cl, err := NewClientTopo()
-			assert.NoError(t, err)
-			_, err = cl.client.Get(ctx, event.Object.ID)
+			_, err := c.client.Get(ctx, event.Object.ID)
 			if err == nil {
 				t.Logf("Target %s is available", objectID)
 				return true

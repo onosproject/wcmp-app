@@ -22,13 +22,14 @@ func (s *TestSuite) TestP4RTConnectivity(t *testing.T) {
 	targetID := "test-topo-integration-target-1"
 	simulator := p4rtsimulator.CreateSimulatorWithName(ctx, t, "stratum-simulator")
 	assert.NotNil(t, simulator)
-	topoutils.WaitForTargetAvailable(ctx, t, topoapi.ID(targetID), 2*time.Minute)
-	defer p4rtsimulator.DeleteSimulator(t, simulator)
 
 	// Get a topology API client
 	client, err := topoutils.NewClientTopo()
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
+
+	client.WaitForTargetAvailable(ctx, t, topoapi.ID(targetID), 2*time.Minute)
+	defer p4rtsimulator.DeleteSimulator(t, simulator)
 
 	// Check the number of control relations
 	relationsList, err := client.GetControlRelations()
