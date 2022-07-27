@@ -9,6 +9,7 @@ require (
 	github.com/onosproject/helmit v0.6.19
 	github.com/onosproject/onos-api/go v0.9.26
 	github.com/onosproject/onos-lib-go v0.8.16
+	github.com/onosproject/onos-ric-sdk-go v0.8.9
 	github.com/onosproject/onos-test v0.6.6
 	github.com/onosproject/onos-topo v0.9.5
 	github.com/p4lang/p4runtime v1.4.0-rc.5
