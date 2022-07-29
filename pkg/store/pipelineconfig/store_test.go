@@ -111,7 +111,7 @@ func TestConfigurationStore(t *testing.T) {
 	target2Config, err = store2.Get(context.TODO(), targetConfigID2)
 	assert.NoError(t, err)
 	assert.NotNil(t, target2Config)
-	target2Config.Status.State = p4rtapi.PipelineConfigState_PIPELINE_CONFIG_PENDING
+	target2Config.Status.State = p4rtapi.PipelineConfigStatus_PENDING
 	revision = target2Config.Revision
 	err = store1.Update(context.TODO(), target2Config)
 	assert.NoError(t, err)
@@ -126,11 +126,11 @@ func TestConfigurationStore(t *testing.T) {
 	target1Config12, err := store2.Get(context.TODO(), targetConfigID1)
 	assert.NoError(t, err)
 
-	target1Config11.Status.State = p4rtapi.PipelineConfigState_PIPELINE_CONFIG_PENDING
+	target1Config11.Status.State = p4rtapi.PipelineConfigStatus_PENDING
 	err = store1.Update(context.TODO(), target1Config11)
 	assert.NoError(t, err)
 
-	target1Config12.Status.State = p4rtapi.PipelineConfigState_PIPELINE_CONFIG_FAILED
+	target1Config12.Status.State = p4rtapi.PipelineConfigStatus_FAILED
 	err = store2.Update(context.TODO(), target1Config12)
 	assert.Error(t, err)
 

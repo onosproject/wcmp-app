@@ -52,7 +52,7 @@ type Store interface {
 
 // NewAtomixStore returns a new persistent Store
 func NewAtomixStore(client atomix.Client) (Store, error) {
-	pipelineConfigs, err := client.GetMap(context.Background(), "pipeline-configurations")
+	pipelineConfigs, err := client.GetMap(context.Background(), "wcmp-app-pipeline-configurations")
 	if err != nil {
 		return nil, errors.FromAtomix(err)
 	}

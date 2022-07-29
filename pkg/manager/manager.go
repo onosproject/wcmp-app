@@ -7,6 +7,7 @@ package manager
 import (
 	"github.com/atomix/atomix-go-client/pkg/atomix"
 	"github.com/onosproject/onos-lib-go/pkg/certs"
+	"github.com/onosproject/onos-lib-go/pkg/env"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
 	appController "github.com/onosproject/wcmp-app/pkg/app/controller"
@@ -19,7 +20,6 @@ import (
 	"github.com/onosproject/wcmp-app/pkg/southbound/p4rt"
 	"github.com/onosproject/wcmp-app/pkg/store/pipelineconfig"
 	"github.com/onosproject/wcmp-app/pkg/store/topo"
-	"os"
 )
 
 var log = logging.GetLogger()
@@ -72,7 +72,7 @@ func (m *Manager) Start() error {
 		return err
 	}
 
-	atomixClient := atomix.NewClient(atomix.WithClientID(os.Getenv("POD_NAME")))
+	atomixClient := atomix.NewClient(atomix.WithClientID(env.GetPodName()))
 	// Create new topo store
 	topoStore, err := topo.NewStore(m.Config.TopoAddress, opts...)
 	if err != nil {
@@ -118,7 +118,7 @@ func (m *Manager) Start() error {
 		return err
 	}
 
-	err = m.startAppController(topoStore, pipelineConfigStore)
+	err = m.startAppController(topoStore, pipelineConfigStore, m.p4PluginRegistry)
 	if err != nil {
 		return err
 	}
@@ -126,8 +126,8 @@ func (m *Manager) Start() error {
 	return nil
 }
 
-func (m *Manager) startAppController(topo topo.Store, pipelineConfigStore pipelineconfig.Store) error {
-	appCtrl := appController.NewController(topo, pipelineConfigStore)
+func (m *Manager) startAppController(topo topo.Store, pipelineConfigStore pipelineconfig.Store, p4PluginRegistry pluginregistry.P4PluginRegistry) error {
+	appCtrl := appController.NewController(topo, pipelineConfigStore, p4PluginRegistry)
 	return appCtrl.Start()
 
 }

@@ -6,7 +6,7 @@ package pipelineconfig
 
 import (
 	"context"
-	"fmt"
+	"github.com/golang/protobuf/proto"
 	p4rtapi "github.com/onosproject/onos-api/go/onos/p4rt/v1"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
@@ -17,8 +17,8 @@ import (
 	"github.com/onosproject/wcmp-app/pkg/southbound/p4rt"
 	pipelineConfigStore "github.com/onosproject/wcmp-app/pkg/store/pipelineconfig"
 	"github.com/onosproject/wcmp-app/pkg/store/topo"
+	p4configapi "github.com/p4lang/p4runtime/go/p4/config/v1"
 	p4api "github.com/p4lang/p4runtime/go/p4/v1"
-	"hash"
 	"time"
 )
 
@@ -33,6 +33,9 @@ func NewController(topo topo.Store, conns p4rt.ConnManager, p4PluginRegistry plu
 	c := controller.NewController("pipelineconfig")
 	c.Watch(&TopoWatcher{
 		topo: topo,
+	})
+	c.Watch(&Watcher{
+		pipelineConfigs: pipelineConfigStore,
 	})
 	c.Reconcile(&Reconciler{
 		conns:               conns,
@@ -56,24 +59,30 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	defer cancel()
 
 	pipelineConfigID := id.Value.(p4rtapi.PipelineConfigID)
+	log.Infow("Reconcile pipeline configuration", "pipelineConfigID", pipelineConfigID)
 	pipelineConfig, err := r.pipelineConfigStore.Get(ctx, pipelineConfigID)
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			log.Warnw("Failed to reconcile Pipeline Configuration", "pipelineConfig ID", pipelineConfigID, "error", err)
 			return controller.Result{}, err
 		}
-		log.Debugw("Pipeline Configuration not found", "pipelineConfigID", pipelineConfigID)
+		log.Warnw("Failed to reconcile pipeline configuration; Pipeline Configuration not found", "pipelineConfigID", pipelineConfigID)
 		return controller.Result{}, nil
 	}
-	if pipelineConfig.Status.State != p4rtapi.PipelineConfigState_PIPELINE_CONFIG_PENDING {
+	if pipelineConfig.Status.State != p4rtapi.PipelineConfigStatus_PENDING {
 		log.Warnw("Failed to reconcile Pipeline Configuration", "pipelineConfig ID", pipelineConfigID, "state", pipelineConfig.Status.State)
 		return controller.Result{}, nil
 	}
+	if pipelineConfig.Spec == nil || len(pipelineConfig.Spec.P4Info) == 0 || len(pipelineConfig.Spec.P4DeviceConfig) == 0 {
+		log.Errorw("Failed Reconciling device pipeline config for target", "pipelineConfig ID", pipelineConfig.ID, "targetID", pipelineConfig.TargetID, "error", err)
+		return controller.Result{}, nil
+	}
 
-	log.Infow("Reconciling Device Pipeline Config for target", "targetID", pipelineConfig.TargetID)
+	log.Infow("Reconciling Device Pipeline Config for target", "pipelineConfig ID", pipelineConfig.ID, "targetID", pipelineConfig.TargetID)
 
 	switch pipelineConfig.Action {
 	case p4rtapi.ConfigurationAction_VERIFY_AND_COMMIT:
+		log.Infow("Reconciling device pipeline config for VERIFY_AND_COMMIT action", "pipelineConfig ID", pipelineConfig.ID)
 		return r.reconcileVerifyAndCommitAction(ctx, pipelineConfig)
 	}
 
@@ -110,17 +119,6 @@ func (r *Reconciler) reconcileVerifyAndCommitAction(ctx context.Context, pipelin
 		log.Errorw("Failed Reconciling device pipeline config for target", "targetID", targetID, "error", err)
 		return controller.Result{}, errors.NewNotFound("Device pipeline config info is not found", targetID)
 	}
-	pipelineInfo := p4rtServerInfo.Pipelines[0]
-	pipelineName := pipelineInfo.Name
-	pipelineVersion := pipelineInfo.Version
-	pipelineArch := pipelineInfo.Architecture
-	pluginID := p4rtapi.NewP4PluginID(pipelineName, pipelineVersion, pipelineArch)
-	p4Plugin, err := r.p4PluginRegistry.GetPlugin(pluginID)
-	if err != nil {
-		log.Errorw("Failed Reconciling device pipeline config for target", "targetID", targetID, "error", err)
-		return controller.Result{}, err
-	}
-
 	// If we've made it this far, we know there's a master relation.
 	// Get the relation and check whether this node is the source
 	relation, err := r.topo.Get(ctx, topoapi.ID(mastership.NodeId))
@@ -144,24 +142,18 @@ func (r *Reconciler) reconcileVerifyAndCommitAction(ctx context.Context, pipelin
 		return controller.Result{}, nil
 	}
 
-	deviceConfig, err := p4Plugin.GetP4DeviceConfig()
+	p4InfoBytes := pipelineConfig.Spec.P4Info
+	p4DeviceConfig := pipelineConfig.Spec.P4DeviceConfig
+
+	p4Info := &p4configapi.P4Info{}
+	err = proto.Unmarshal(p4InfoBytes, p4Info)
 	if err != nil {
-		if !errors.IsNotFound(err) {
-			log.Errorw("Failed Reconciling device pipeline config for target", "targetID", targetID, "error", err)
-			return controller.Result{}, err
-		}
-		return controller.Result{}, nil
+		return controller.Result{}, err
 	}
 
-	p4Info, err := p4Plugin.GetP4Info()
-	var hash64 hash.Hash64
-	hash64.Sum([]byte(fmt.Sprintf("%s/%s", deviceConfig, p4Info)))
 	config := &p4api.ForwardingPipelineConfig{
 		P4Info:         p4Info,
-		P4DeviceConfig: deviceConfig,
-		Cookie: &p4api.ForwardingPipelineConfig_Cookie{
-			Cookie: hash64.Sum64(),
-		},
+		P4DeviceConfig: p4DeviceConfig,
 	}
 
 	_, err = conn.SetForwardingPipelineConfig(ctx, &p4api.SetForwardingPipelineConfigRequest{
@@ -176,7 +168,7 @@ func (r *Reconciler) reconcileVerifyAndCommitAction(ctx context.Context, pipelin
 
 	if err != nil {
 		log.Errorw("Failed Reconciling device pipeline config for target", "targetID", targetID, "error", err)
-		pipelineConfig.Status.State = p4rtapi.PipelineConfigState_PIPELINE_CONFIG_FAILED
+		pipelineConfig.Status.State = p4rtapi.PipelineConfigStatus_FAILED
 		err = r.pipelineConfigStore.Update(ctx, pipelineConfig)
 		if err != nil {
 			if !errors.IsNotFound(err) || !errors.IsConflict(err) {
@@ -187,8 +179,7 @@ func (r *Reconciler) reconcileVerifyAndCommitAction(ctx context.Context, pipelin
 		}
 		return controller.Result{}, nil
 	}
-	pipelineConfig.Status.State = p4rtapi.PipelineConfigState_PIPELINE_CONFIG_COMPLETE
-	pipelineConfig.Spec.P4DeviceConfig = deviceConfig
+	pipelineConfig.Status.State = p4rtapi.PipelineConfigStatus_COMPLETE
 	err = r.pipelineConfigStore.Update(ctx, pipelineConfig)
 	if err != nil {
 		if !errors.IsNotFound(err) || !errors.IsConflict(err) {
@@ -197,11 +188,11 @@ func (r *Reconciler) reconcileVerifyAndCommitAction(ctx context.Context, pipelin
 		}
 		return controller.Result{}, nil
 	}
+	log.Infow("Device pipelineConfig is Set Successfully", "targetID", targetID)
 	response, err := conn.GetForwardingPipelineConfig(ctx, &p4api.GetForwardingPipelineConfigRequest{
 		DeviceId: p4rtServerInfo.DeviceID,
 	})
-
-	log.Infow("Device pipeline config is set successfully", "Get response", response)
+	log.Infow("Test response", "response", response)
 
 	return controller.Result{}, nil
 }
