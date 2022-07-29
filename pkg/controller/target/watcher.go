@@ -44,9 +44,9 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 	w.cancel = cancel
 	go func() {
 		for event := range eventCh {
-			log.Infow("Received topo event", "topo object ID", event.Object.ID)
+			log.Debugw("Received topo event", "topo object ID", event.Object.ID)
 			if _, ok := event.Object.Obj.(*topoapi.Object_Entity); ok {
-				log.Infow("Event entity", "entity", event.Object)
+				log.Debugw("Event entity", "entity", event.Object)
 				// If the entity object has configurable aspect then the controller
 				// can make a connection to it
 				err = event.Object.GetAspect(&topoapi.P4RTServerInfo{})

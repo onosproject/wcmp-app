@@ -199,7 +199,7 @@ func createTestTarget(t *testing.T, targetID string, deviceID uint64, insecure b
 	})
 	assert.NoError(t, err)
 
-	err = target.SetAspect(&topoapi.MastershipState{})
+	err = target.SetAspect(&topoapi.P4RTMastershipState{})
 	assert.NoError(t, err)
 
 	timeout := time.Second * 30

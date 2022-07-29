@@ -49,12 +49,12 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 				targetEntityID := relation.Relation.TgtEntityID
 				ch <- controller.NewID(targetEntityID)
 			}
-			/*if _, ok := event.Object.Obj.(*topoapi.Object_Entity); ok {
+			if _, ok := event.Object.Obj.(*topoapi.Object_Entity); ok {
 				err = event.Object.GetAspect(&topoapi.P4RTServerInfo{})
 				if err == nil {
 					ch <- controller.NewID(event.Object.ID)
 				}
-			}*/
+			}
 
 		}
 		close(ch)

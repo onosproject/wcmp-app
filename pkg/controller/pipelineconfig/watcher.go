@@ -42,6 +42,7 @@ func (w *Watcher) Start(ch chan<- controller.ID) error {
 	w.cancel = cancel
 	go func() {
 		for event := range eventCh {
+			log.Infow("Recevied config event", "config ID", event.PipelineConfig.ID, "event type", event.Type.String())
 			ch <- controller.NewID(event.PipelineConfig.ID)
 		}
 	}()
@@ -84,9 +85,9 @@ func (w *TopoWatcher) Start(ch chan<- controller.ID) error {
 	w.cancel = cancel
 	go func() {
 		for event := range eventCh {
-			log.Infow("Received topo event", "topo object ID", event.Object.ID)
+			log.Debugw("Received topo event", "topo object ID", event.Object.ID, "event type", event.Type)
 			if _, ok := event.Object.Obj.(*topoapi.Object_Entity); ok {
-				log.Infow("Event entity", "entity", event.Object)
+				log.Debugw("Event entity", "entity", event.Object)
 				p4rtServerInfo := &topoapi.P4RTServerInfo{}
 				err = event.Object.GetAspect(p4rtServerInfo)
 				if err == nil {
