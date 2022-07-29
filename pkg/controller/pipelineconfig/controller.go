@@ -6,7 +6,6 @@ package pipelineconfig
 
 import (
 	"context"
-	"github.com/golang/protobuf/proto"
 	p4rtapi "github.com/onosproject/onos-api/go/onos/p4rt/v1"
 	topoapi "github.com/onosproject/onos-api/go/onos/topo"
 	"github.com/onosproject/onos-lib-go/pkg/controller"
@@ -19,6 +18,7 @@ import (
 	"github.com/onosproject/wcmp-app/pkg/store/topo"
 	p4configapi "github.com/p4lang/p4runtime/go/p4/config/v1"
 	p4api "github.com/p4lang/p4runtime/go/p4/v1"
+	"google.golang.org/protobuf/proto"
 	"time"
 )
 
@@ -54,6 +54,7 @@ type Reconciler struct {
 	pipelineConfigStore pipelineConfigStore.Store
 }
 
+// Reconcile reconciles pipeline configuration
 func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
@@ -189,10 +190,5 @@ func (r *Reconciler) reconcileVerifyAndCommitAction(ctx context.Context, pipelin
 		return controller.Result{}, nil
 	}
 	log.Infow("Device pipelineConfig is Set Successfully", "targetID", targetID)
-	response, err := conn.GetForwardingPipelineConfig(ctx, &p4api.GetForwardingPipelineConfigRequest{
-		DeviceId: p4rtServerInfo.DeviceID,
-	})
-	log.Infow("Test response", "response", response)
-
 	return controller.Result{}, nil
 }

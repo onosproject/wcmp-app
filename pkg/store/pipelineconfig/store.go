@@ -10,7 +10,7 @@ import (
 	"github.com/atomix/atomix-go-client/pkg/atomix"
 	_map "github.com/atomix/atomix-go-client/pkg/atomix/map"
 	"github.com/atomix/atomix-go-framework/pkg/atomix/meta"
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/google/uuid"
 	p4rtapi "github.com/onosproject/onos-api/go/onos/p4rt/v1"
 	"github.com/onosproject/onos-lib-go/pkg/errors"

@@ -50,6 +50,7 @@ type Reconciler struct {
 	p4PluginRegistry pluginregistry.P4PluginRegistry
 }
 
+// Reconcile reconciles setting pipeline configuration
 func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
