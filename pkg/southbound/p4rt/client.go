@@ -42,7 +42,7 @@ func (c *client) SendArbitrationRequest(deviceID uint64, electionID uint64, role
 }
 
 func (c *client) ReadEntities(ctx context.Context, request *p4api.ReadRequest, opts ...grpc.CallOption) ([]*p4api.Entity, error) {
-	log.Infow("Received read entities request", "request", request)
+	log.Debugw("Received read entities request", "request", request)
 	entities, err := c.readClient.ReadEntities(ctx, request, opts...)
 	if err != nil {
 		return nil, errors.FromGRPC(err)
@@ -53,28 +53,28 @@ func (c *client) ReadEntities(ctx context.Context, request *p4api.ReadRequest, o
 
 // Write Updates one or more P4 entities on the target.
 func (c *client) Write(ctx context.Context, request *p4api.WriteRequest, opts ...grpc.CallOption) (*p4api.WriteResponse, error) {
-	log.Infow("Received Write request", "request", request)
+	log.Debugw("Received Write request", "request", request)
 	writeResponse, err := c.writeClient.Write(ctx, request, opts...)
 	return writeResponse, errors.FromGRPC(err)
 }
 
 // SetForwardingPipelineConfig  sets the P4 forwarding-pipeline config.
 func (c *client) SetForwardingPipelineConfig(ctx context.Context, request *p4api.SetForwardingPipelineConfigRequest, opts ...grpc.CallOption) (*p4api.SetForwardingPipelineConfigResponse, error) {
-	log.Infow("Received SetForwardingPipelineConfig request", "request", request)
+	log.Debugw("Received SetForwardingPipelineConfig request", "request", request)
 	setForwardingPipelineConfigResponse, err := c.pipelineConfigClient.SetForwardingPipelineConfig(ctx, request, opts...)
 	return setForwardingPipelineConfigResponse, errors.FromGRPC(err)
 }
 
 // GetForwardingPipelineConfig  gets the current P4 forwarding-pipeline config.
 func (c *client) GetForwardingPipelineConfig(ctx context.Context, request *p4api.GetForwardingPipelineConfigRequest, opts ...grpc.CallOption) (*p4api.GetForwardingPipelineConfigResponse, error) {
-	log.Infow("Received GetForwardingPipelineConfig request", "request", request)
+	log.Debugw("Received GetForwardingPipelineConfig request", "request", request)
 	getForwardingPipelineConfigResponse, err := c.pipelineConfigClient.GetForwardingPipelineConfig(ctx, request, opts...)
 	return getForwardingPipelineConfigResponse, errors.FromGRPC(err)
 }
 
 // Capabilities discovers the capabilities of the P4Runtime server implementation.
 func (c *client) Capabilities(ctx context.Context, request *p4api.CapabilitiesRequest, opts ...grpc.CallOption) (*p4api.CapabilitiesResponse, error) {
-	log.Infow("Received Capabilities request", "request", request)
+	log.Debugw("Received Capabilities request", "request", request)
 	capabilitiesResponse, err := c.p4runtimeClient.Capabilities(ctx, request, opts...)
 	return capabilitiesResponse, errors.FromGRPC(err)
 }

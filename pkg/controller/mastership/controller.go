@@ -94,7 +94,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	})
 
 	if err != nil {
-		log.Warnf("Updating MastershipState for target '%s' failed: %v", targetEntity.GetID(), err)
+		log.Warnw("Updating MastershipState for targe failed", "targetID", targetEntity.ID, "error", err)
 		return controller.Result{}, err
 	}
 	targetRelations := make(map[topoapi.ID]topoapi.Object)
@@ -107,17 +107,12 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	mastership := &topoapi.P4RTMastershipState{}
 	_ = targetEntity.GetAspect(mastership)
 
-	if err != nil {
-		log.Warnw("Failed to reconcile mastership election for the P4RT target", "targetID", targetEntity.ID, "error", err)
-		return controller.Result{}, err
-	}
-
 	if _, ok := targetRelations[topoapi.ID(mastership.NodeId)]; !ok {
 		if len(targetRelations) == 0 {
 			if mastership.NodeId == "" {
 				return controller.Result{}, nil
 			}
-			log.Infof("Master in term resigned for the P4RT target", "targetID", targetEntity.GetID(), "mastership term", mastership.Term)
+			log.Infow("Master in term resigned for the P4RT target", "targetID", targetEntity.ID, "mastership term", mastership.Term)
 			mastership.NodeId = ""
 		} else {
 			conn, err := r.conns.GetByTarget(ctx, targetID)
@@ -172,7 +167,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 						mastership.Term = responseElectionID
 						err = targetEntity.SetAspect(mastership)
 						if err != nil {
-							log.Warnf("Updating MastershipState for gNMI target '%s' failed: %v", targetEntity.GetID(), err)
+							log.Warnw("Updating MastershipState for P4 target failed", "targetID", targetEntity.ID, "error", err)
 							return controller.Result{}, err
 						}
 
@@ -180,9 +175,10 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 						err = r.topo.Update(ctx, targetEntity)
 						if err != nil {
 							if !errors.IsNotFound(err) && !errors.IsConflict(err) {
-								log.Warnf("Updating MastershipState for gNMI target '%s' failed: %v", targetEntity.GetID(), err)
+								log.Warnw("Updating MastershipState for P4 target failed", "targetID", targetEntity.ID, "error", err)
 								return controller.Result{}, err
 							}
+							log.Warn(err)
 							return controller.Result{}, nil
 						}
 						return controller.Result{}, nil
