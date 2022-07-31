@@ -10,7 +10,7 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/env"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/northbound"
-	appController "github.com/onosproject/wcmp-app/pkg/app/controller"
+	appController "github.com/onosproject/wcmp-app/pkg/app/pipeliner"
 	"github.com/onosproject/wcmp-app/pkg/controller/connection"
 	"github.com/onosproject/wcmp-app/pkg/controller/mastership"
 	"github.com/onosproject/wcmp-app/pkg/controller/node"

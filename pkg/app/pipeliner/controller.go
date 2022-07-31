@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package controller
+package pipeliner
 
 import (
 	"context"
@@ -26,7 +26,7 @@ const (
 
 // NewController returns a new P4RT target  controller
 func NewController(topo topo.Store, pipelineConfigs pipelineconfig.Store, p4PluginRegistry pluginregistry.P4PluginRegistry) *controller.Controller {
-	c := controller.NewController("wcmp")
+	c := controller.NewController("pipeliner")
 	c.Watch(&TopoWatcher{
 		topo: topo,
 	})
@@ -66,12 +66,12 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	p4rtServerInfo := &topoapi.P4RTServerInfo{}
 	err = target.GetAspect(p4rtServerInfo)
 	if err != nil {
-		log.Errorw("Failed Reconciling device pipeline config for target", "targetID", targetID, "error", err)
+		log.Errorw("Failed creating device pipeline config for target", "targetID", targetID, "error", err)
 		return controller.Result{}, err
 	}
 	pipelinesInfo := p4rtServerInfo.Pipelines
 	if len(pipelinesInfo) == 0 {
-		log.Warnw("Failed Reconciling creating pipeline config for target", "targetID", targetID, "error", err)
+		log.Warnw("Failed creating device pipeline config for target", "targetID", targetID, "error", err)
 		return controller.Result{}, err
 	}
 	pipelineInfo := p4rtServerInfo.Pipelines[0]
@@ -82,33 +82,36 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 	pluginID := p4rtapi.NewP4PluginID(pipelineName, pipelineVersion, pipelineArch)
 	p4Plugin, err := r.p4PluginRegistry.GetPlugin(pluginID)
 	if err != nil {
-		log.Errorw("Failed Reconciling device pipeline config for target", "targetID", targetID, "error", err)
+		log.Errorw("Failed creating device pipeline config for target", "pipelineConfigID", pipelineID, "targetID", targetID, "error", err)
 		return controller.Result{}, err
 	}
 
 	deviceConfig, err := p4Plugin.GetP4DeviceConfig()
 	if err != nil {
 		if !errors.IsNotFound(err) {
-			log.Errorw("Failed Reconciling device pipeline config for target", "targetID", targetID, "error", err)
+			log.Errorw("Failed Reconciling device pipeline config for target", "pipelineConfigID", pipelineID, "targetID", targetID, "error", err)
 			return controller.Result{}, err
 		}
 		return controller.Result{}, nil
 	}
+	// If device config is nil, we can initialize it with an empty byte array
+	if deviceConfig == nil {
+		deviceConfig = []byte{}
+	}
 	p4Info, err := p4Plugin.GetP4Info()
 	if err != nil {
 		if !errors.IsNotFound(err) {
-			log.Errorw("Failed Reconciling device pipeline config for target", "targetID", targetID, "error", err)
+			log.Errorw("Failed creating device pipeline config for target", "pipelineConfigID", pipelineID, "targetID", targetID, "error", err)
 			return controller.Result{}, err
 		}
 		return controller.Result{}, nil
 	}
 	p4InfoBytes, err := proto.Marshal(p4Info)
 	if err != nil {
-		log.Errorw("Failed Reconciling device pipeline config for target", "targetID", targetID, "error", err)
+		log.Errorw("Failed creating device pipeline config for target", "pipelineConfigID", pipelineID, "targetID", targetID, "error", err)
 		return controller.Result{}, err
 	}
 
-	log.Infow("Creating pipeline config in pipeline config data store", "pipelineConfigID", pipelineID, "target ID", targetID)
 	err = r.pipelineConfigs.Create(ctx, &p4rtapi.PipelineConfig{
 		ID:       pipelineID,
 		TargetID: p4rtapi.TargetID(targetID),
@@ -125,5 +128,6 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 		}
 		return controller.Result{}, nil
 	}
+	log.Infow("Device Pipeline config is created successfully in pipeline config data store", "pipelineConfigID", pipelineID, "target ID", targetID)
 	return controller.Result{}, nil
 }
