@@ -1,4 +1,4 @@
-![Coverage](https://img.shields.io/badge/Coverage-76.2%25-brightgreen)
+![Coverage](https://img.shields.io/badge/Coverage-70.6%25-brightgreen)
 
 <!--
 SPDX-FileCopyrightText: 2022 Intel Corporation
