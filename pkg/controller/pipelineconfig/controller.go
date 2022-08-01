@@ -66,7 +66,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 			log.Warnw("Failed to reconcile Pipeline Configuration", "pipelineConfig ID", pipelineConfigID, "error", err)
 			return controller.Result{}, err
 		}
-		log.Warnw("Failed to reconcile pipeline configuration; Pipeline Configuration not found", "pipelineConfigID", pipelineConfigID, "targetID", pipelineConfig.TargetID)
+		log.Warnw("Failed to reconcile pipeline configuration; Pipeline Configuration not found", "pipelineConfigID", pipelineConfigID)
 		return controller.Result{}, nil
 	}
 

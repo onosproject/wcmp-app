@@ -92,6 +92,7 @@ func (r *Reconciler) Reconcile(id controller.ID) (controller.Result, error) {
 			log.Errorw("Failed Reconciling device pipeline config for target", "pipelineConfigID", pipelineID, "targetID", targetID, "error", err)
 			return controller.Result{}, err
 		}
+		log.Warnw("Failed Reconciling device pipeline config for target; device config not found", "pipelineConfigID", pipelineID, "targetID", targetID, "error", err)
 		return controller.Result{}, nil
 	}
 	// If device config is nil, we can initialize it with an empty byte array
