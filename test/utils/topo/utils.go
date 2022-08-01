@@ -20,6 +20,7 @@ type ClientTopo interface {
 	GetControllerEntities() ([]topoapi.Object, error)
 	WaitForControlRelation(ctx context.Context, t *testing.T, predicate func(*topoapi.Relation, topoapi.Event) bool, timeout time.Duration) bool
 	WaitForTargetAvailable(ctx context.Context, t *testing.T, objectID topoapi.ID, timeout time.Duration) bool
+	Create(object *topoapi.Object) error
 }
 
 // NewClientTopo creates a new topo SDK client
@@ -50,6 +51,15 @@ func getFilter(kind string) *topoapi.Filters {
 		},
 	}
 	return controlRelationFilter
+}
+
+// Create will call the create function
+func (c *Client) Create(object *topoapi.Object) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	err := c.client.Create(ctx, object)
+	cancel()
+	return err
 }
 
 // GetControlRelationFilter gets control relation filter

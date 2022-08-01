@@ -13,6 +13,16 @@ import (
 	"time"
 )
 
+const (
+	name           = "p4rt:4"
+	version        = "1.0.x"
+	serviceAddress = "stratum-simulator"
+	servicePort    = "50001"
+	deviceID       = 1
+	modelID        = "test"
+	role           = "leaf"
+)
+
 // TestP4RTConnectivity will test the connectivity
 func (s *TestSuite) TestP4RTConnectivity(t *testing.T) {
 	ctx, cancel := p4rtsimulator.MakeContext()
@@ -20,13 +30,18 @@ func (s *TestSuite) TestP4RTConnectivity(t *testing.T) {
 
 	// Create a simulated device
 	targetID := "test-topo-integration-target-1"
-	simulator := p4rtsimulator.CreateSimulatorWithName(ctx, t, "stratum-simulator")
+	simulator := p4rtsimulator.CreateSimulatorWithName(ctx, t, "stratum-simulator", true)
 	assert.NotNil(t, simulator)
 
 	// Get a topology API client
 	client, err := topoutils.NewClientTopo()
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
+
+	newSwitch, err := p4rtsimulator.NewSwitchEntity(name, version, serviceAddress, servicePort, deviceID, modelID, role)
+	assert.NoError(t, err)
+	err = client.Create(newSwitch)
+	assert.NoError(t, err)
 
 	client.WaitForTargetAvailable(ctx, t, topoapi.ID(targetID), 2*time.Minute)
 	defer p4rtsimulator.DeleteSimulator(t, simulator)
