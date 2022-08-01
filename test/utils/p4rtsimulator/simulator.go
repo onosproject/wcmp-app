@@ -7,7 +7,6 @@ package p4rtsimulator
 import (
 	"context"
 	"github.com/onosproject/helmit/pkg/helm"
-	"github.com/onosproject/helmit/pkg/kubernetes"
 	"github.com/onosproject/helmit/pkg/util/random"
 	"github.com/onosproject/onos-api/go/onos/topo"
 	toposdk "github.com/onosproject/onos-ric-sdk-go/pkg/topo"
@@ -31,18 +30,12 @@ const (
 )
 
 // NewSimulatorTargetEntity creates a topo entity for a device simulator target
-func NewSimulatorTargetEntity(ctx context.Context, simulator *helm.HelmRelease, targetType string, targetVersion string) (*topo.Object, error) {
-	simulatorClient := kubernetes.NewForReleaseOrDie(simulator)
-	services, err := simulatorClient.CoreV1().Services().List(ctx)
-	if err != nil {
-		return nil, err
-	}
-	service := services[0]
-	return NewTargetEntity(simulator.Name(), targetType, targetVersion, service.Ports()[0].Address(true))
+func NewSimulatorTargetEntity(ctx context.Context, simulator *helm.HelmRelease, targetType string) (*topo.Object, error) {
+	return NewTargetEntity(simulator.Name(), targetType)
 }
 
 // NewTargetEntity creates a topo entity with the specified target name, type, version and service address
-func NewTargetEntity(name string, targetType string, targetVersion string, serviceAddress string) (*topo.Object, error) {
+func NewTargetEntity(name string, targetType string) (*topo.Object, error) {
 	o := topo.Object{
 		ID:   topo.ID(name),
 		Type: topo.Object_ENTITY,
@@ -146,7 +139,7 @@ func CreateSimulatorWithName(ctx context.Context, t *testing.T, name string, cre
 	time.Sleep(2 * time.Second)
 
 	if createTopoEntity {
-		simulatorTarget, err := NewSimulatorTargetEntity(ctx, simulator, SimulatorTargetType, SimulatorTargetVersion)
+		simulatorTarget, err := NewSimulatorTargetEntity(ctx, simulator, SimulatorTargetType)
 		assert.NoError(t, err, "could not make target for simulator %v", err)
 
 		err = AddTargetToTopo(ctx, simulatorTarget)
