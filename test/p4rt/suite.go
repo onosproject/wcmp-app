@@ -25,7 +25,7 @@ func (s *TestSuite) SetupTestSuite(c *input.Context) error {
 	umbrella := charts.CreateUmbrellaRelease()
 	r := umbrella.
 		Set("global.image.registry", registry).
-		Set("import.onos-cli.enabled", true). // not needed - can be enabled by adding '--set onos-umbrella.import.onos-cli.enabled=true' to helmit args for investigation
+		Set("import.onos-cli.enabled", false). // not needed - can be enabled by adding '--set onos-umbrella.import.onos-cli.enabled=true' to helmit args for investigation
 		Set("import.wcmp-app.enabled", true).
 		Install(true)
 	return r
