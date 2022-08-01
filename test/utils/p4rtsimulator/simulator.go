@@ -57,17 +57,6 @@ func NewTargetEntity(name string, targetType string, targetVersion string, servi
 		return nil, err
 	}
 
-	timeout := defaultTimeout
-	if err := o.SetAspect(&topo.Configurable{
-		Type:                 targetType,
-		Address:              serviceAddress,
-		Version:              targetVersion,
-		Timeout:              &timeout,
-		ValidateCapabilities: true,
-	}); err != nil {
-		return nil, err
-	}
-
 	return &o, nil
 }
 
@@ -78,7 +67,7 @@ func NewSwitchEntity(name string, version string, serviceAddress string, service
 		Type: topo.Object_ENTITY,
 		Obj: &topo.Object_Entity{
 			Entity: &topo.Entity{
-				KindID: topo.ID("switch"),
+				KindID: topo.ID(topo.SwitchKind),
 			},
 		},
 	}
@@ -91,7 +80,7 @@ func NewSwitchEntity(name string, version string, serviceAddress string, service
 
 	timeout := defaultTimeout
 	if err := o.SetAspect(&topo.Configurable{
-		Type:                 "switch",
+		Type:                 topo.SwitchKind,
 		Address:              serverEndpoint,
 		Version:              version,
 		Timeout:              &timeout,
@@ -148,7 +137,7 @@ func CreateSimulator(ctx context.Context, t *testing.T) *helm.HelmRelease {
 // CreateSimulatorWithName creates a device simulator
 func CreateSimulatorWithName(ctx context.Context, t *testing.T, name string, createTopoEntity bool) *helm.HelmRelease {
 	simulator := helm.
-		Chart("device-simulator", onostest.OnosChartRepo).
+		Chart("stratum-simulator", onostest.OnosChartRepo).
 		Release(name).
 		Set("image.tag", "latest")
 	err := simulator.Install(true)
