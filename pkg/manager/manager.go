@@ -16,6 +16,7 @@ import (
 	"github.com/onosproject/wcmp-app/pkg/controller/node"
 	pipelineconfigctrl "github.com/onosproject/wcmp-app/pkg/controller/pipelineconfig"
 	"github.com/onosproject/wcmp-app/pkg/controller/target"
+	p4rtnorthbound "github.com/onosproject/wcmp-app/pkg/northbound/p4rt/v1"
 	"github.com/onosproject/wcmp-app/pkg/pluginregistry"
 	"github.com/onosproject/wcmp-app/pkg/southbound/p4rt"
 	"github.com/onosproject/wcmp-app/pkg/store/pipelineconfig"
@@ -173,6 +174,7 @@ func (m *Manager) startNorthboundServer() error {
 		true,
 		northbound.SecurityConfig{}))
 	s.AddService(logging.Service{})
+	s.AddService(p4rtnorthbound.Service{})
 
 	doneCh := make(chan error)
 	go func() {
