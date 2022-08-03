@@ -8,6 +8,7 @@ import (
 	p4api "github.com/p4lang/p4runtime/go/p4/v1"
 )
 
+// Read one or more P4 entities from the target.
 func (s *Server) Read(request *p4api.ReadRequest, server p4api.P4Runtime_ReadServer) error {
 	//TODO implement me
 	panic("implement me")

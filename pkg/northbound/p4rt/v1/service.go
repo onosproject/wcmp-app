@@ -13,7 +13,6 @@ import (
 	"github.com/onosproject/wcmp-app/pkg/store/topo"
 	p4api "github.com/p4lang/p4runtime/go/p4/v1"
 	"google.golang.org/grpc"
-	"sync"
 )
 
 // Service implements service for P4Runtime
@@ -25,6 +24,7 @@ type Service struct {
 	conns               p4rt.ConnManager
 }
 
+// NewService creates a new instance of NB service
 func NewService(
 	p4PluginRegistry pluginregistry.P4PluginRegistry,
 	pipelineConfigStore pipelineconfig.Store,
@@ -39,8 +39,8 @@ func NewService(
 
 }
 
+// Server P4runtime server
 type Server struct {
-	mu sync.RWMutex
 	p4api.UnimplementedP4RuntimeServer
 	p4PluginRegistry    pluginregistry.P4PluginRegistry
 	pipelineConfigStore pipelineconfig.Store
@@ -48,11 +48,13 @@ type Server struct {
 	conns               p4rt.ConnManager
 }
 
+// Capabilities discover the capabilities of the P4Runtime server implementation
 func (s *Server) Capabilities(ctx context.Context, request *p4api.CapabilitiesRequest) (*p4api.CapabilitiesResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
+// Register registers P4runtime server
 func (s Service) Register(r *grpc.Server) {
 	p4api.RegisterP4RuntimeServer(r, &Server{
 		p4PluginRegistry:    s.p4PluginRegistry,
